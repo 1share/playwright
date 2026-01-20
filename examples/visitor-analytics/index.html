@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<!--
+  Copyright (c) Microsoft Corporation.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <title>实时访问统计 - Real-time Visitor Analytics</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+    }
+
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 2.5rem;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      text-align: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+    }
+
+    .stat-icon {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+
+    .stat-icon.visits {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .stat-icon.users {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .stat-label {
+      font-size: 1rem;
+      color: #666;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    .stat-value {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #333;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-change {
+      font-size: 0.875rem;
+      margin-top: 12px;
+      padding: 4px 12px;
+      border-radius: 12px;
+      display: inline-block;
+    }
+
+    .stat-change.positive {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .online-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: white;
+      margin-bottom: 20px;
+    }
+
+    .pulse {
+      width: 12px;
+      height: 12px;
+      background: #4caf50;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+      }
+    }
+
+    .live-updates {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .live-updates h3 {
+      color: white;
+      margin-bottom: 16px;
+      font-size: 1.25rem;
+    }
+
+    .update-list {
+      list-style: none;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .update-list li {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 0.875rem;
+      color: #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .update-time {
+      color: #888;
+      font-size: 0.75rem;
+    }
+
+    footer {
+      color: rgba(255, 255, 255, 0.7);
+      text-align: center;
+      margin-top: 40px;
+      font-size: 0.875rem;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.75rem;
+      }
+      
+      .stat-value {
+        font-size: 2.5rem;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 实时访问统计</h1>
+    
+    <div class="online-indicator">
+      <span class="pulse"></span>
+      <span>实时更新中...</span>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon visits">👁️</div>
+        <div class="stat-label">总访问量 (Page Views)</div>
+        <div class="stat-value" id="visitCount">0</div>
+        <div class="stat-change positive" id="visitChange">+0 今日</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon users">👤</div>
+        <div class="stat-label">独立用户数 (Unique Users)</div>
+        <div class="stat-value" id="userCount">0</div>
+        <div class="stat-change positive" id="userChange">+0 今日</div>
+      </div>
+    </div>
+
+    <div class="live-updates">
+      <h3>📝 实时动态</h3>
+      <ul class="update-list" id="updateList">
+        <!-- Dynamic updates will be inserted here -->
+      </ul>
+    </div>
+
+    <footer>
+      <p>数据基于本地存储，用于演示目的</p>
+      <p>Data is stored locally for demonstration purposes</p>
+    </footer>
+  </div>
+
+  <script>
+    // Analytics module
+    const Analytics = {
+      STORAGE_KEY: 'visitor_analytics',
+      USER_ID_KEY: 'visitor_user_id',
+      
+      // Initialize or get analytics data
+      getData() {
+        const data = localStorage.getItem(this.STORAGE_KEY);
+        if (data) {
+          return JSON.parse(data);
+        }
+        return {
+          totalVisits: 0,
+          uniqueUsers: [],
+          todayVisits: 0,
+          todayUsers: 0,
+          lastResetDate: new Date().toDateString(),
+          updates: []
+        };
+      },
+      
+      // Save analytics data
+      saveData(data) {
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+      },
+      
+      // Generate or get user ID
+      getUserId() {
+        let userId = localStorage.getItem(this.USER_ID_KEY);
+        if (!userId) {
+          userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
+          localStorage.setItem(this.USER_ID_KEY, userId);
+        }
+        return userId;
+      },
+      
+      // Check if it's a new day and reset daily counters
+      checkDayReset(data) {
+        const today = new Date().toDateString();
+        if (data.lastResetDate !== today) {
+          data.todayVisits = 0;
+          data.todayUsers = 0;
+          data.lastResetDate = today;
+        }
+        return data;
+      },
+      
+      // Record a visit
+      recordVisit() {
+        let data = this.getData();
+        data = this.checkDayReset(data);
+        
+        const userId = this.getUserId();
+        const isNewUser = !data.uniqueUsers.includes(userId);
+        
+        // Increment total visits
+        data.totalVisits++;
+        data.todayVisits++;
+        
+        // Add new user if not already tracked
+        if (isNewUser) {
+          data.uniqueUsers.push(userId);
+          data.todayUsers++;
+          this.addUpdate(data, '新用户访问', 'new_user');
+        } else {
+          this.addUpdate(data, '用户回访', 'return_visit');
+        }
+        
+        this.saveData(data);
+        return data;
+      },
+      
+      // Add an update entry
+      addUpdate(data, message, type) {
+        const update = {
+          message,
+          type,
+          time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        };
+        data.updates.unshift(update);
+        // Keep only last 50 updates
+        if (data.updates.length > 50) {
+          data.updates = data.updates.slice(0, 50);
+        }
+      }
+    };
+
+    // UI module
+    const UI = {
+      elements: {
+        visitCount: document.getElementById('visitCount'),
+        userCount: document.getElementById('userCount'),
+        visitChange: document.getElementById('visitChange'),
+        userChange: document.getElementById('userChange'),
+        updateList: document.getElementById('updateList')
+      },
+      
+      // Animate counter
+      animateCounter(element, targetValue) {
+        const startValue = parseInt(element.textContent) || 0;
+        const duration = 1000;
+        const startTime = performance.now();
+        
+        const animate = (currentTime) => {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          
+          // Easing function
+          const easeOut = 1 - Math.pow(1 - progress, 3);
+          const currentValue = Math.floor(startValue + (targetValue - startValue) * easeOut);
+          
+          element.textContent = currentValue.toLocaleString();
+          
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          }
+        };
+        
+        requestAnimationFrame(animate);
+      },
+      
+      // Update stats display
+      updateStats(data) {
+        this.animateCounter(this.elements.visitCount, data.totalVisits);
+        this.animateCounter(this.elements.userCount, data.uniqueUsers.length);
+        
+        this.elements.visitChange.textContent = `+${data.todayVisits} 今日`;
+        this.elements.userChange.textContent = `+${data.todayUsers} 今日`;
+      },
+      
+      // Render update list
+      renderUpdates(updates) {
+        this.elements.updateList.innerHTML = updates.slice(0, 10).map(update => `
+          <li>
+            <span>${update.type === 'new_user' ? '🆕' : '🔄'} ${update.message}</span>
+            <span class="update-time">${update.time}</span>
+          </li>
+        `).join('');
+      },
+      
+      // Add new update to list
+      addNewUpdate(update) {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span>${update.type === 'new_user' ? '🆕' : '🔄'} ${update.message}</span>
+          <span class="update-time">${update.time}</span>
+        `;
+        
+        const list = this.elements.updateList;
+        list.insertBefore(li, list.firstChild);
+        
+        // Keep only 10 items visible
+        while (list.children.length > 10) {
+          list.removeChild(list.lastChild);
+        }
+      }
+    };
+
+    // Simulate real-time updates for demo purposes
+    const Simulator = {
+      interval: null,
+      
+      start() {
+        // Simulate random visits every 3-8 seconds
+        const scheduleNext = () => {
+          const delay = 3000 + Math.random() * 5000;
+          this.interval = setTimeout(() => {
+            this.simulateVisit();
+            scheduleNext();
+          }, delay);
+        };
+        scheduleNext();
+      },
+      
+      stop() {
+        if (this.interval) {
+          clearTimeout(this.interval);
+        }
+      },
+      
+      simulateVisit() {
+        let data = Analytics.getData();
+        data = Analytics.checkDayReset(data);
+        
+        // 30% chance of new user, 70% chance of return visit
+        const isNewUser = Math.random() < 0.3;
+        
+        data.totalVisits++;
+        data.todayVisits++;
+        
+        if (isNewUser) {
+          const fakeUserId = 'sim_user_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
+          data.uniqueUsers.push(fakeUserId);
+          data.todayUsers++;
+          Analytics.addUpdate(data, '新用户访问', 'new_user');
+        } else {
+          Analytics.addUpdate(data, '用户回访', 'return_visit');
+        }
+        
+        Analytics.saveData(data);
+        UI.updateStats(data);
+        UI.addNewUpdate(data.updates[0]);
+      }
+    };
+
+    // Initialize - script is at bottom of body so DOM is ready
+    (function init() {
+      // Record this visit
+      const data = Analytics.recordVisit();
+      
+      // Update UI
+      UI.updateStats(data);
+      UI.renderUpdates(data.updates);
+      
+      // Start simulator for demo
+      Simulator.start();
+    })();
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', () => {
+      Simulator.stop();
+    });
+  </script>
+</body>
+</html>
