@@ -1,0 +1,9 @@
+{
+  "name": "visitor-analytics-example",
+  "version": "1.0.0",
+  "description": "Real-time visitor analytics demonstration page",
+  "private": true,
+  "scripts": {
+    "serve": "npx serve ."
+  }
+}
